@@ -25,16 +25,21 @@ body, html {
     height: 100vh;
     z-index: 9999;
     background: #000;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-/* ✅ الكواليتي عالية */
 video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* دي عشان الكواليتي */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+video.ready {
+    opacity: 1;
 }
 
 .overlay {
@@ -48,6 +53,7 @@ video {
     align-items: center;
     background: rgba(0,0,0,0.3);
     z-index: 10000;
+    transition: opacity 0.5s ease;
 }
 
 .start-btn {
@@ -68,7 +74,6 @@ video {
     color: #fff;
 }
 
-/* موبايل */
 @media(max-width: 768px) {
     .start-btn {
         font-size: 16px;
@@ -79,19 +84,30 @@ video {
 </head>
 <body>
 
-<div class="video-container">
+<div class="video-container" id="videoContainer">
     
-    <!-- ✅ preload="auto" عشان يحمل الفيديو كله -->
-    <!-- ✅ poster عشان يظهر أول frame -->
     <video id="myVideo" 
-           preload="auto" 
+           preload="metadata"
            playsinline 
            webkit-playsinline
-           muted
-           poster="https://firebasestorage.googleapis.com/v0/b/salma-behery.firebasestorage.app/o/0323(1).mp4?alt=media&token=e8280992-2aed-414b-a43b-5907a7813268#t=0.1">
+           muted>
         
-        <!-- ✅ نفس الرابط بس نضيف #t=0 عشان يبدأ من الأول -->
-        <source src="https://firebasestorage.googleapis.com/v0/b/salma-behery.firebasestorage.app/o/0323(1).mp4?alt=media&token=e8280992-2aed-414b-a43b-5907a7813268#t=0" type="video/mp4">
+        <!-- 🖥️ Desktop -->
+        <source 
+            src="https://res.cloudinary.com/dkaxpgdds/video/upload/v1774528164/0323_2_g93lxe.mp4" 
+            type="video/mp4"
+            media="(min-width: 769px)">
+        
+        <!-- 📱 Mobile -->
+        <source 
+            src="https://res.cloudinary.com/dkaxpgdds/video/upload/v1774528483/0326_1_weiudq.mp4" 
+            type="video/mp4"
+            media="(max-width: 768px)">
+        
+        <!-- 🔄 Fallback -->
+        <source 
+            src="https://res.cloudinary.com/dkaxpgdds/video/upload/v1774528164/0323_2_g93lxe.mp4" 
+            type="video/mp4">
     </video>
 
     <div class="overlay" id="overlay">
@@ -101,43 +117,52 @@ video {
 </div>
 
 <script>
+// ✅ Cloudinary URLs
+const VIDEO_URLS = {
+    desktop: "https://res.cloudinary.com/dkaxpgdds/video/upload/v1774528164/0323_2_g93lxe.mp4",
+    mobile: "https://res.cloudinary.com/dkaxpgdds/video/upload/v1774528483/0326_1_weiudq.mp4"
+};
+
 const video = document.getElementById("myVideo");
 const overlay = document.getElementById("overlay");
+const container = document.getElementById("videoContainer");
+let isStarted = false;
 
-// ✅ نوقف الفيديو على أول frame بطريقة أقوى
-function setFirstFrame() {
-    video.currentTime = 0;
-    video.pause();
-    
-    // نعملها تاني بعد شوية عشان يتأكد
-    setTimeout(() => {
-        video.currentTime = 0;
-        video.pause();
-    }, 100);
-    
-    setTimeout(() => {
-        video.currentTime = 0;
-        video.pause();
-    }, 500);
-    
-    setTimeout(() => {
-        video.currentTime = 0;
-        video.pause();
-    }, 1000);
+// ✅ Poster من أول فريم (Cloudinary)
+function getPosterUrl(videoUrl) {
+    return videoUrl.replace('/upload/', '/upload/so_0,w_1920,h_1080,c_fill/').replace('.mp4', '.jpg');
 }
 
-// لما الفيديو يحمل
-video.addEventListener('loadedmetadata', setFirstFrame);
-video.addEventListener('loadeddata', setFirstFrame);
-video.addEventListener('canplay', setFirstFrame);
+function setupVideo() {
+    const isMobile = window.innerWidth <= 768;
+    const videoUrl = isMobile ? VIDEO_URLS.mobile : VIDEO_URLS.desktop;
+    const posterUrl = getPosterUrl(videoUrl);
+    
+    // ✅ Poster يظهر فوراً
+    container.style.backgroundImage = `url('${posterUrl}')`;
+    video.poster = posterUrl;
+    
+    video.load();
+}
 
-// نعملها على طول كمان
-setFirstFrame();
+// ✅ أول فريم جاهز
+video.addEventListener('loadeddata', function() {
+    video.classList.add('ready');
+});
+
+video.addEventListener('loadedmetadata', function() {
+    video.currentTime = 0;
+    video.pause();
+});
 
 function startVideo() {
+    if (isStarted) return;
+    isStarted = true;
+    
     overlay.style.opacity = "0";
     setTimeout(() => overlay.style.display = "none", 500);
     
+    container.style.backgroundImage = 'none';
     video.muted = false;
     video.currentTime = 0;
     
@@ -150,6 +175,9 @@ function startVideo() {
 video.addEventListener("ended", function() {
     window.location.href = "https://salmabehery.com/en";
 });
+
+// 🚀 ابدأ
+setupVideo();
 </script>
 
 </body>
